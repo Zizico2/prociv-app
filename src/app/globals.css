@@ -1,0 +1,52 @@
+@import "@astryxdesign/core/reset.css";
+@import "@astryxdesign/core/astryx.css";
+@import "../themes/prociv/generated/prociv.css";
+@import "leaflet/dist/leaflet.css";
+
+@stylex;
+
+/* Leaflet owns these DOM nodes; the rest of the UI uses Astryx/StyleX. */
+.pulso-marker {
+  background: none;
+  border: 0;
+}
+.pulso-pin,
+.pulso-cluster {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--pulso-white);
+  color: var(--pulso-other);
+  border: 2px solid currentColor;
+  box-shadow: 0 2px 8px #153d3933;
+}
+.pulso-fire {
+  color: var(--pulso-fire);
+}
+.pulso-accident {
+  color: var(--pulso-accident);
+}
+.pulso-assistance {
+  color: var(--pulso-assist);
+}
+.pulso-cluster {
+  background: var(--pulso-ink);
+  color: var(--pulso-white);
+  border: 3px solid var(--pulso-white);
+  font:
+    600 13px Arial,
+    sans-serif;
+}
+.pulso-selected {
+  outline: 5px solid var(--pulso-mint);
+  transform: scale(1.15);
+}
+.leaflet-container {
+  font-family: Arial, Helvetica, sans-serif;
+}
+.leaflet-control-attribution {
+  font-size: 10px;
+}

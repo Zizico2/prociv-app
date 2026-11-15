@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package prociv.v1;
+
+import "google/protobuf/timestamp.proto";
+
+// Current public ANEPC occurrences. No archive or historical series is retained.
+service OccurrencesService {
+  rpc Ping(PingRequest) returns (PingResponse);
+  rpc ListOccurrences(ListOccurrencesRequest) returns (ListOccurrencesResponse);
+}
+
+message PingRequest {}
+message PingResponse { string message = 1; }
+message ListOccurrencesRequest {}
+message ListOccurrencesResponse {
+  repeated Occurrence occurrences = 1;
+  google.protobuf.Timestamp fetched_at = 2;
+  optional google.protobuf.Timestamp source_updated_at = 3;
+  string attribution = 4;
+}
+
+message Occurrence {
+  // Numero, falling back to ID. ID_oc is refresh-local and never an identity.
+  string id = 1;
+  optional string number = 2;
+  optional string status = 3;
+  optional string grouped_status = 4;
+  optional int32 nature_code = 5;
+  optional string nature = 6;
+  optional string region = 7;
+  optional string sub_region = 8;
+  optional string municipality = 9;
+  optional string parish = 10;
+  optional string locality = 11;
+  optional string address = 12;
+  optional double latitude = 13;
+  optional double longitude = 14;
+  optional int32 personnel = 15;
+  optional int32 ground_vehicles = 16;
+  optional int32 aircraft = 17;
+  optional google.protobuf.Timestamp started_at = 18;
+  optional google.protobuf.Timestamp source_updated_at = 19;
+}

@@ -1,0 +1,1 @@
+Schema vendored from https://github.com/Zizico2/prociv-proto at `232512bfe929eaa3ef4cefc18713c25f230913de`. Regenerate with `rtk bun run proto:generate`. Generated TypeScript and native HTTP/2 transport are server-only.
