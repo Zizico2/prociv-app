@@ -24,6 +24,39 @@ test('current snapshot, search, category filters, missing points and details', a
   await expect(
     page.getByLabel('Mapa interativo das ocorrências da ANEPC'),
   ).toBeVisible();
+  if (isMobile) {
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const button = [...document.querySelectorAll('button')].find(
+            (element) => element.textContent?.trim() === 'Todas',
+          );
+          return button
+            ? getComputedStyle(button)
+                .getPropertyValue('--astryx-hit-inset-bottom')
+                .trim()
+            : '';
+        }),
+      )
+      .not.toBe('');
+    const scrolling = await page.evaluate(() => {
+      const button = [...document.querySelectorAll('button')].find(
+        (element) => element.textContent?.trim() === 'Todas',
+      );
+      let row = button?.parentElement ?? null;
+      while (row && getComputedStyle(row).overflowX !== 'auto')
+        row = row.parentElement;
+      if (!row) return { vertical: -1, horizontal: 0 };
+      row.scrollTop = 100;
+      const vertical = row.scrollTop;
+      row.scrollLeft = row.scrollWidth;
+      const horizontal = row.scrollLeft;
+      row.scrollLeft = 0;
+      return { vertical, horizontal };
+    });
+    expect(scrolling.vertical).toBe(0);
+    expect(scrolling.horizontal).toBeGreaterThan(0);
+  }
   if (isMobile)
     await page.getByRole('button', { name: 'Lista', exact: true }).click();
   const list = page.getByRole('complementary', {

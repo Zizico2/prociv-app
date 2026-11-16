@@ -777,6 +777,9 @@ const styles = stylex.create({
   },
   categories: {
     overflowX: 'auto',
+    // A coarse pointer grows each button past its box. overflow-x: auto would
+    // otherwise compute overflow-y to auto, and that sliver scrolls the row.
+    overflowY: 'clip',
     flexShrink: 0,
     paddingBottom: '0.1rem',
     scrollbarWidth: 'none',
