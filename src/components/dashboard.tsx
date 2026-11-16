@@ -16,6 +16,7 @@ import { Stack, StackItem } from '@astryxdesign/core/Stack';
 import { Text } from '@astryxdesign/core/Text';
 import { TextInput } from '@astryxdesign/core/TextInput';
 import { TopNav, TopNavHeading } from '@astryxdesign/core/TopNav';
+import { VisuallyHidden } from '@astryxdesign/core/VisuallyHidden';
 import * as stylex from '@stylexjs/stylex';
 import type { DehydratedDbState } from '@tanstack/db';
 import {
@@ -37,6 +38,7 @@ import {
   Search,
   ShieldCheck,
   SlidersHorizontal,
+  TriangleAlert,
   Users,
   X,
 } from 'lucide-react';
@@ -104,8 +106,12 @@ export function Dashboard({
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
+  const [mapWarning, setMapWarning] = useState('');
+  const [statusOpen, setStatusOpen] = useState(false);
   const [now, setNow] = useState<number | null>(null);
-  const compact = useMediaQuery('(max-width: 767px)');
+  const compact = useMediaQuery(
+    '(max-width: 767px), (max-width: 1023px) and (max-height: 500px)',
+  );
   const rows = snapshot?.occurrences ?? [];
   const filtered = filterOccurrences(rows, search, kind, region, status);
   const selected = filtered.find((r) => r.id === selectedId);
@@ -173,8 +179,75 @@ export function Dashboard({
       setRefreshing(false);
     }
   }
+  const categoryControls = (
+    <Stack
+      direction="horizontal"
+      gap={2}
+      align="center"
+      xstyle={styles.categories}
+    >
+      {(Object.keys(categoryLabels) as Category[]).map((key) => (
+        <StackItem key={key} size="static" xstyle={styles.categoryItem}>
+          <Button
+            label={categoryLabels[key]}
+            size="sm"
+            variant={kind === key ? 'primary' : 'ghost'}
+            aria-pressed={kind === key}
+            onClick={() => setKind(key)}
+            xstyle={styles.categoryButton}
+            icon={
+              key !== 'all' ? <Icon icon={icons[key]} size="sm" /> : undefined
+            }
+          />
+        </StackItem>
+      ))}
+      {activeFilters && (
+        <Button
+          label="Limpar"
+          size="sm"
+          variant="ghost"
+          onClick={reset}
+          xstyle={styles.categoryButton}
+        />
+      )}
+    </Stack>
+  );
+  const dataWarning =
+    error ||
+    (stale
+      ? 'A fonte está desatualizada. Consulte a hora dos dados antes de interpretar o mapa.'
+      : '');
+  const warnings = [dataWarning, mapWarning].filter(Boolean);
   const filterControls = (
     <Stack gap={4}>
+      <Stack direction="horizontal" align="center" justify="between">
+        <Heading level={2}>Pesquisar e filtrar</Heading>
+        <Button
+          label="Fechar filtros"
+          isIconOnly
+          icon={<Icon icon={X} />}
+          variant="ghost"
+          onClick={() => setFiltersOpen(false)}
+        />
+      </Stack>
+      {compact && (
+        <>
+          <TextInput
+            label="Pesquisar ocorrências"
+            type="search"
+            placeholder="Local ou ocorrência…"
+            startIcon={Search}
+            value={search}
+            onChange={setSearch}
+            hasClear
+            width="100%"
+          />
+          <Stack gap={2}>
+            <Text type="label">Tipo de ocorrência</Text>
+            {categoryControls}
+          </Stack>
+        </>
+      )}
       <Selector
         label="Região"
         value={region}
@@ -201,7 +274,11 @@ export function Dashboard({
       </Text>
       <Button label="Limpar filtros" variant="ghost" onClick={reset} />
       <Button
-        label="Ver resultados"
+        label={
+          compact
+            ? `Ver ${filtered.length} ${filtered.length === 1 ? 'ocorrência' : 'ocorrências'}`
+            : 'Ver resultados'
+        }
         variant="primary"
         onClick={() => setFiltersOpen(false)}
       />
@@ -242,155 +319,169 @@ export function Dashboard({
       }
     >
       <Stack xstyle={styles.root}>
-        <Stack
-          as="section"
-          direction="horizontal"
-          align="center"
-          justify="between"
-          gap={5}
-          xstyle={styles.overview}
-        >
-          <Stack gap={1}>
-            <Text type="supporting" xstyle={styles.eyebrow}>
-              PROTEÇÃO E SOCORRO
-            </Text>
-            <Heading level={1} xstyle={styles.title}>
-              Portugal, agora.
-            </Heading>
-            <Text color="secondary" xstyle={styles.desktop}>
-              O que acontece. Onde acontece. De forma simples.
-            </Text>
-          </Stack>
-          <Stack direction="horizontal" gap={6} xstyle={styles.metrics}>
-            <Metric
-              label="ocorrências"
-              value={snapshot ? String(rows.length) : '—'}
-              icon={Activity}
-            />
-            <Metric
-              label="operacionais"
-              value={snapshot ? resourceTotal(rows, 'personnel') : '—'}
-              icon={Users}
-            />
-            <Metric
-              label="meios terrestres"
-              value={snapshot ? resourceTotal(rows, 'groundVehicles') : '—'}
-              icon={Car}
-            />
-          </Stack>
-        </Stack>
-        <Stack
-          as="section"
-          gap={3}
-          xstyle={styles.toolbar}
-          aria-label="Filtrar ocorrências"
-        >
-          <Stack direction="horizontal" gap={3} align="center">
-            <StackItem size="fill">
-              <TextInput
-                label="Pesquisar ocorrências"
-                isLabelHidden
-                type="search"
-                placeholder="Pesquisar local ou ocorrência…"
-                startIcon={Search}
-                value={search}
-                onChange={setSearch}
-                hasClear
-                width="100%"
-              />
-            </StackItem>
-            <StackItem size="static">
-              <Button
-                label="Filtros"
-                icon={<Icon icon={SlidersHorizontal} />}
-                variant={region || status ? 'primary' : 'secondary'}
-                onClick={() => setFiltersOpen(true)}
-              />
-            </StackItem>
-            <StackItem size="static">
-              <Button
-                label="Atualizar"
-                tooltip="Atualizar ocorrências"
-                isIconOnly
-                icon={<Icon icon={RefreshCw} />}
-                onClick={() => void refresh()}
-                isLoading={refreshing}
-              />
-            </StackItem>
-          </Stack>
-          <Stack
-            direction="horizontal"
-            gap={2}
-            align="center"
-            xstyle={styles.categories}
-          >
-            {(Object.keys(categoryLabels) as Category[]).map((key) => (
-              <StackItem key={key} size="static" xstyle={styles.categoryItem}>
-                <Button
-                  label={categoryLabels[key]}
-                  size="sm"
-                  variant={kind === key ? 'primary' : 'ghost'}
-                  aria-pressed={kind === key}
-                  onClick={() => setKind(key)}
-                  xstyle={styles.categoryButton}
-                  icon={
-                    key !== 'all' ? (
-                      <Icon icon={icons[key]} size="sm" />
-                    ) : undefined
-                  }
+        {compact && (
+          <VisuallyHidden>
+            <Heading level={1}>Portugal, agora.</Heading>
+          </VisuallyHidden>
+        )}
+        {!compact && (
+          <Stack xstyle={styles.desktopChrome}>
+            <Stack
+              as="section"
+              direction="horizontal"
+              align="center"
+              justify="between"
+              gap={5}
+              xstyle={styles.overview}
+            >
+              <Stack gap={1}>
+                <Text type="supporting" xstyle={styles.eyebrow}>
+                  PROTEÇÃO E SOCORRO
+                </Text>
+                <Heading level={1} xstyle={styles.title}>
+                  Portugal, agora.
+                </Heading>
+                <Text color="secondary" xstyle={styles.desktop}>
+                  O que acontece. Onde acontece. De forma simples.
+                </Text>
+              </Stack>
+              <Stack direction="horizontal" gap={6} xstyle={styles.metrics}>
+                <Metric
+                  label="ocorrências"
+                  value={snapshot ? String(rows.length) : '—'}
+                  icon={Activity}
                 />
-              </StackItem>
-            ))}
-            {activeFilters && (
-              <Button
-                label="Limpar"
-                size="sm"
-                variant="ghost"
-                onClick={reset}
-                xstyle={styles.categoryButton}
+                <Metric
+                  label="operacionais"
+                  value={snapshot ? resourceTotal(rows, 'personnel') : '—'}
+                  icon={Users}
+                />
+                <Metric
+                  label="meios terrestres"
+                  value={snapshot ? resourceTotal(rows, 'groundVehicles') : '—'}
+                  icon={Car}
+                />
+              </Stack>
+            </Stack>
+            <Stack
+              as="section"
+              gap={3}
+              xstyle={styles.toolbar}
+              aria-label="Filtrar ocorrências"
+            >
+              <Stack direction="horizontal" gap={3} align="center">
+                <StackItem size="fill">
+                  <TextInput
+                    label="Pesquisar ocorrências"
+                    isLabelHidden
+                    type="search"
+                    placeholder="Pesquisar local ou ocorrência…"
+                    startIcon={Search}
+                    value={search}
+                    onChange={setSearch}
+                    hasClear
+                    width="100%"
+                  />
+                </StackItem>
+                <StackItem size="static">
+                  <Button
+                    label="Filtros"
+                    icon={<Icon icon={SlidersHorizontal} />}
+                    variant={region || status ? 'primary' : 'secondary'}
+                    onClick={() => setFiltersOpen(true)}
+                  />
+                </StackItem>
+                <StackItem size="static">
+                  <Button
+                    label="Atualizar"
+                    tooltip="Atualizar ocorrências"
+                    isIconOnly
+                    icon={<Icon icon={RefreshCw} />}
+                    onClick={() => void refresh()}
+                    isLoading={refreshing}
+                  />
+                </StackItem>
+              </Stack>
+              {categoryControls}
+            </Stack>
+            {(error || stale) && (
+              <Banner
+                status="warning"
+                title={
+                  error ||
+                  'A fonte está desatualizada. Consulte a hora dos dados antes de interpretar o mapa.'
+                }
               />
             )}
           </Stack>
-        </Stack>
-        {(error || stale) && (
-          <Banner
-            status="warning"
-            title={
-              error ||
-              'A fonte está desatualizada. Consulte a hora dos dados antes de interpretar o mapa.'
-            }
-          />
         )}
-        <Stack
-          direction="horizontal"
-          justify="between"
-          align="center"
-          gap={2}
-          xstyle={styles.mobileSwitch}
-        >
-          <Text type="label" aria-live="polite">
-            {filtered.length} ocorrências
-          </Text>
-          <Stack direction="horizontal" gap={1}>
-            <Button
-              label="Mapa"
-              size="sm"
-              variant={view === 'map' ? 'primary' : 'ghost'}
-              icon={<Icon icon={Map} />}
-              onClick={() => setView('map')}
-              aria-pressed={view === 'map'}
-            />
-            <Button
-              label="Lista"
-              size="sm"
-              variant={view === 'list' ? 'primary' : 'ghost'}
-              icon={<Icon icon={ListIcon} />}
-              onClick={() => setView('list')}
-              aria-pressed={view === 'list'}
-            />
-          </Stack>
-        </Stack>
         <Stack xstyle={styles.workspace}>
+          {compact && (
+            <>
+              <Stack gap={3} xstyle={styles.mobileTools}>
+                <Button
+                  label={
+                    activeFilters
+                      ? 'Pesquisar · filtros ativos'
+                      : 'Pesquisar e filtrar'
+                  }
+                  icon={<Icon icon={Search} />}
+                  variant={activeFilters ? 'primary' : 'secondary'}
+                  onClick={() => setFiltersOpen(true)}
+                  aria-haspopup="dialog"
+                  aria-expanded={filtersOpen}
+                  xstyle={[
+                    styles.floatingButton,
+                    !activeFilters && styles.floatingSurface,
+                  ]}
+                />
+              </Stack>
+              <Stack
+                direction="horizontal"
+                gap={3}
+                align="center"
+                xstyle={styles.mobileActions}
+              >
+                <Button
+                  label={view === 'map' ? `Lista · ${filtered.length}` : 'Mapa'}
+                  aria-label={view === 'map' ? 'Lista' : 'Mapa'}
+                  icon={<Icon icon={view === 'map' ? ListIcon : Map} />}
+                  variant="primary"
+                  onClick={() => setView(view === 'map' ? 'list' : 'map')}
+                  xstyle={styles.floatingButton}
+                />
+                <Button
+                  label="Atualizar"
+                  isIconOnly
+                  icon={<Icon icon={RefreshCw} />}
+                  onClick={() => void refresh()}
+                  isLoading={refreshing}
+                  xstyle={[styles.floatingButton, styles.floatingSurface]}
+                />
+                {warnings.length > 0 && (
+                  <Stack role="status">
+                    <Button
+                      label="Avisos sobre os dados"
+                      isIconOnly
+                      icon={<Icon icon={TriangleAlert} />}
+                      onClick={() => setStatusOpen(true)}
+                      aria-haspopup="dialog"
+                      aria-expanded={statusOpen}
+                      xstyle={[styles.floatingButton, styles.warningButton]}
+                    />
+                  </Stack>
+                )}
+              </Stack>
+              <VisuallyHidden>
+                <Text role="status">
+                  {filtered.length} ocorrências
+                  {activeFilters ? ', filtros ativos' : ''}
+                  {warnings.length ? ', existem avisos sobre os dados' : ''}
+                </Text>
+              </VisuallyHidden>
+            </>
+          )}
+
           <Stack
             as="aside"
             aria-label="Lista de ocorrências"
@@ -518,6 +609,8 @@ export function Dashboard({
               rows={filtered}
               selected={selected ?? null}
               onSelect={select}
+              onWarning={setMapWarning}
+              compact={compact}
             />
             <Stack
               direction="horizontal"
@@ -571,10 +664,41 @@ export function Dashboard({
           isOpen={filtersOpen}
           onOpenChange={setFiltersOpen}
           label="Filtrar ocorrências"
-          height="hug"
+          height={compact ? 'tall' : 'hug'}
         >
           {filterControls}
         </BottomSheet>
+        {compact && (
+          <BottomSheet
+            isOpen={statusOpen && warnings.length > 0}
+            onOpenChange={setStatusOpen}
+            label="Avisos sobre os dados"
+            height="hug"
+          >
+            <Stack gap={4}>
+              <Heading level={2}>Sobre os dados</Heading>
+              {warnings.map((message) => (
+                <Text key={message}>{message}</Text>
+              ))}
+              <Text type="supporting" color="secondary">
+                Fonte às {dateTime(snapshot?.sourceUpdatedAt)}
+              </Text>
+              <Button
+                label="Atualizar agora"
+                icon={<Icon icon={RefreshCw} />}
+                onClick={() => {
+                  setStatusOpen(false);
+                  void refresh();
+                }}
+              />
+              <Button
+                label="Fechar aviso"
+                variant="ghost"
+                onClick={() => setStatusOpen(false)}
+              />
+            </Stack>
+          </BottomSheet>
+        )}
         {compact && (
           <BottomSheet
             isOpen={Boolean(selected)}
@@ -731,6 +855,43 @@ function Detail({
 }
 
 const styles = stylex.create({
+  desktopChrome: {
+    display: {
+      default: 'flex',
+      '@media (max-width: 767px), (max-width: 1023px) and (max-height: 500px)':
+        'none',
+    },
+    gap: 0,
+    flexShrink: 0,
+  },
+  mobileTools: {
+    position: 'absolute',
+    top: '1rem',
+    left: '1rem',
+    zIndex: 600,
+    alignItems: 'flex-start',
+    maxWidth: 'calc(100% - 5.5rem)',
+  },
+  mobileActions: {
+    position: 'absolute',
+    bottom: '2.25rem',
+    left: '1rem',
+    zIndex: 600,
+  },
+  floatingButton: {
+    minHeight: '44px',
+    boxShadow: 'var(--pulso-shadow)',
+    borderRadius: '2rem',
+  },
+  floatingSurface: {
+    backgroundColor: 'var(--color-background-surface)',
+    color: 'var(--color-text-primary)',
+  },
+  warningButton: {
+    backgroundColor: '#fff1bd',
+    color: '#805300',
+    width: '44px',
+  },
   root: {
     // AppShell owns the dynamic viewport and the header's intrinsic height.
     height: '100%',
@@ -739,14 +900,30 @@ const styles = stylex.create({
     gap: 0,
   },
   overview: {
-    paddingBlock: { default: '1.5rem', '@media (max-width: 767px)': '0.9rem' },
-    paddingInline: { default: '2rem', '@media (max-width: 767px)': '1rem' },
+    paddingBlock: {
+      default: '1.5rem',
+      '@media (max-width: 767px), (max-width: 1023px) and (max-height: 500px)':
+        '0.9rem',
+    },
+    paddingInline: {
+      default: '2rem',
+      '@media (max-width: 767px), (max-width: 1023px) and (max-height: 500px)':
+        '1rem',
+    },
     flexShrink: 0,
-    flexWrap: { default: 'nowrap', '@media (max-width: 767px)': 'wrap' },
+    flexWrap: {
+      default: 'nowrap',
+      '@media (max-width: 767px), (max-width: 1023px) and (max-height: 500px)':
+        'wrap',
+    },
     rowGap: '0.8rem',
   },
   title: {
-    fontSize: { default: '2.2rem', '@media (max-width: 767px)': '1.7rem' },
+    fontSize: {
+      default: '2.2rem',
+      '@media (max-width: 767px), (max-width: 1023px) and (max-height: 500px)':
+        '1.7rem',
+    },
     lineHeight: 1.15,
   },
   eyebrow: { letterSpacing: '0.16em', fontSize: '0.65rem', fontWeight: 700 },
@@ -762,20 +939,40 @@ const styles = stylex.create({
     fontSize: '0.75rem',
   },
   metrics: {
-    columnGap: { default: '2.5rem', '@media (max-width: 767px)': '0.75rem' },
-    width: { default: 'auto', '@media (max-width: 767px)': '100%' },
-    display: { default: 'flex', '@media (max-width: 767px)': 'grid' },
+    columnGap: {
+      default: '2.5rem',
+      '@media (max-width: 767px), (max-width: 1023px) and (max-height: 500px)':
+        '0.75rem',
+    },
+    width: {
+      default: 'auto',
+      '@media (max-width: 767px), (max-width: 1023px) and (max-height: 500px)':
+        '100%',
+    },
+    display: {
+      default: 'flex',
+      '@media (max-width: 767px), (max-width: 1023px) and (max-height: 500px)':
+        'grid',
+    },
     gridTemplateColumns: 'repeat(3,minmax(0,1fr))',
   },
   metricValue: {
-    fontSize: { default: '1.75rem', '@media (max-width: 767px)': '1.4rem' },
+    fontSize: {
+      default: '1.75rem',
+      '@media (max-width: 767px), (max-width: 1023px) and (max-height: 500px)':
+        '1.4rem',
+    },
     fontWeight: 500,
     letterSpacing: '-0.06em',
     lineHeight: 1.2,
   },
   toolbar: {
     paddingBlock: '0.75rem',
-    paddingInline: { default: '2rem', '@media (max-width: 767px)': '1rem' },
+    paddingInline: {
+      default: '2rem',
+      '@media (max-width: 767px), (max-width: 1023px) and (max-height: 500px)':
+        '1rem',
+    },
     backgroundColor: 'var(--color-background-surface)',
     borderBlock: '1px solid var(--color-border)',
     flexShrink: 0,
@@ -786,6 +983,11 @@ const styles = stylex.create({
     display: 'flex',
   },
   categoryButton: {
+    minHeight: {
+      default: null,
+      '@media (max-width: 767px), (max-width: 1023px) and (max-height: 500px)':
+        '44px',
+    },
     // The hit target is outside the border box, so it does not count toward
     // the row's height. Margin follows the inset the button measured, and the
     // flex row grows to match.
@@ -793,16 +995,32 @@ const styles = stylex.create({
     marginBottom: 'var(--astryx-hit-inset-bottom, 0px)',
   },
   categories: {
-    overflowX: 'auto',
+    overflowX: {
+      default: 'auto',
+      '@media (max-width: 767px), (max-width: 1023px) and (max-height: 500px)':
+        'visible',
+    },
+    flexWrap: {
+      default: 'nowrap',
+      '@media (max-width: 767px), (max-width: 1023px) and (max-height: 500px)':
+        'wrap',
+    },
+    rowGap: {
+      default: null,
+      '@media (max-width: 767px), (max-width: 1023px) and (max-height: 500px)':
+        '0.5rem',
+    },
     flexShrink: 0,
     paddingBottom: '0.1rem',
     scrollbarWidth: 'none',
   },
   workspace: {
+    position: 'relative',
     display: 'grid',
     gridTemplateColumns: {
       default: 'var(--pulso-panel) minmax(0,1fr)',
-      '@media (max-width: 767px)': 'minmax(0,1fr)',
+      '@media (max-width: 767px), (max-width: 1023px) and (max-height: 500px)':
+        'minmax(0,1fr)',
     },
     minHeight: 0,
     flex: 1,
@@ -817,6 +1035,11 @@ const styles = stylex.create({
   },
   railHeading: {
     padding: '1.15rem 1.25rem',
+    paddingTop: {
+      default: '1.15rem',
+      '@media (max-width: 767px), (max-width: 1023px) and (max-height: 500px)':
+        '5rem',
+    },
     borderBottom: '1px solid var(--color-border)',
     flexShrink: 0,
   },
@@ -829,6 +1052,11 @@ const styles = stylex.create({
   },
   railFooter: {
     padding: '0.9rem 1.25rem',
+    paddingBottom: {
+      default: '0.9rem',
+      '@media (max-width: 767px), (max-width: 1023px) and (max-height: 500px)':
+        '6rem',
+    },
     borderTop: '1px solid var(--color-border)',
     flexShrink: 0,
   },
@@ -851,6 +1079,11 @@ const styles = stylex.create({
     isolation: 'isolate',
   },
   mapCaption: {
+    display: {
+      default: 'flex',
+      '@media (max-width: 767px), (max-width: 1023px) and (max-height: 500px)':
+        'none',
+    },
     position: 'absolute',
     top: '1rem',
     left: '1rem',
@@ -882,19 +1115,24 @@ const styles = stylex.create({
     backgroundColor: 'var(--color-background-surface)',
   },
   desktop: {
-    display: { default: 'block', '@media (max-width: 767px)': 'none' },
+    display: {
+      default: 'block',
+      '@media (max-width: 767px), (max-width: 1023px) and (max-height: 500px)':
+        'none',
+    },
   },
   mobileOnly: {
-    display: { default: 'none', '@media (max-width: 767px)': 'block' },
-  },
-  mobileSwitch: {
-    display: { default: 'none', '@media (max-width: 767px)': 'flex' },
-    padding: '0.4rem 1rem',
-    flexShrink: 0,
-    backgroundColor: 'var(--color-background-surface)',
-    borderBottom: '1px solid var(--color-border)',
+    display: {
+      default: 'none',
+      '@media (max-width: 767px), (max-width: 1023px) and (max-height: 500px)':
+        'block',
+    },
   },
   hideMobile: {
-    display: { default: 'flex', '@media (max-width: 767px)': 'none' },
+    display: {
+      default: 'flex',
+      '@media (max-width: 767px), (max-width: 1023px) and (max-height: 500px)':
+        'none',
+    },
   },
 });
