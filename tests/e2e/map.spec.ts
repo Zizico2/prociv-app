@@ -1,5 +1,51 @@
 import { expect, test } from '@playwright/test';
 
+test('selecting occurrences preserves the map view', async ({
+  page,
+  isMobile,
+}) => {
+  await page.route('https://tile.openstreetmap.org/**', (route) =>
+    route.abort(),
+  );
+  await page.goto('/');
+  const map = page.getByLabel('Mapa interativo das ocorrências da ANEPC');
+  const fire = map.getByRole('button', { name: /Santarém/ });
+  await expect(fire).toBeVisible();
+  await expect(map.getByRole('button', { name: /Porto/ })).toBeVisible();
+  const readView = () =>
+    map.evaluate((element) => ({
+      pane: (element.querySelector('.leaflet-map-pane') as HTMLElement).style
+        .transform,
+      markers: Array.from(
+        element.querySelectorAll<HTMLElement>('.leaflet-marker-icon'),
+        (marker) => [marker.title, marker.style.transform],
+      ).sort(),
+    }));
+  const before = await readView();
+
+  await fire.click();
+  await expect(page.getByText('N.º 20260001', { exact: false })).toBeVisible();
+  await expect(map.locator('.pulso-selected')).toHaveCount(1);
+  expect(await readView()).toEqual(before);
+  await page.getByRole('button', { name: 'Fechar detalhes' }).click();
+  expect(await readView()).toEqual(before);
+
+  if (isMobile)
+    await page.getByRole('button', { name: 'Lista', exact: true }).click();
+  await page
+    .getByRole('complementary', { name: 'Lista de ocorrências' })
+    .getByRole('button', { name: /Porto/ })
+    .click();
+  await expect(page.getByText('N.º 20260002', { exact: false })).toBeVisible();
+  await expect(map.locator('.pulso-selected')).toHaveCount(1);
+  expect(await readView()).toEqual(before);
+  await page.getByRole('button', { name: 'Fechar detalhes' }).click();
+  if (isMobile)
+    await page.getByRole('button', { name: 'Mapa', exact: true }).click();
+  await expect(map).toBeVisible();
+  expect(await readView()).toEqual(before);
+});
+
 test('current snapshot, search, category filters, missing points and details', async ({
   page,
   isMobile,

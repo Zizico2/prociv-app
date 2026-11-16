@@ -173,15 +173,6 @@ export default function OccurrenceMap({
   }, [rows, selected?.id, ready]);
 
   useEffect(() => {
-    if (selected && hasPoint(selected) && map.current)
-      map.current.setView(
-        [selected.latitude, selected.longitude],
-        Math.max(map.current.getZoom(), 11),
-        { animate: false },
-      );
-  }, [selected]);
-
-  useEffect(() => {
     onWarning(
       locationError ||
         (tilesFailed
