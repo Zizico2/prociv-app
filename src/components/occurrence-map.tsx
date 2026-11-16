@@ -182,9 +182,7 @@ export default function OccurrenceMap({
           path.setAttribute(
             'd',
             shared
-              ? opened
-                ? 'M8 3v5H3m18 0h-5V3M3 16h5v5m8 0v-5h5'
-                : 'M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5'
+              ? 'M12 3 2 8l10 5 10-5-10-5ZM2 12l10 5 10-5M2 16l10 5 10-5'
               : paths[category(row)],
           );
           svg.appendChild(path);

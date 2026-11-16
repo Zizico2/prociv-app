@@ -56,10 +56,10 @@
   stroke: var(--pulso-ink);
 }
 
-/* Shared coordinates open records; circular clusters zoom into an area. */
+/* Shared locations use outlined pins; zoom clusters use filled circles. */
 .pulso-shared {
   position: relative;
-  border-radius: 10px;
+  border-radius: 50%;
   color: var(--pulso-ink);
   box-shadow:
     3px 3px 0 var(--pulso-white),
@@ -84,8 +84,7 @@
     600 12px Arial,
     sans-serif;
 }
-.pulso-marker:focus-visible .pulso-shared,
-.pulso-marker:hover .pulso-shared {
+.pulso-marker:focus-visible .pulso-shared {
   outline: 3px solid var(--pulso-ink);
   outline-offset: 4px;
 }
