@@ -11,7 +11,8 @@
   border: 0;
 }
 .pulso-pin,
-.pulso-cluster {
+.pulso-cluster,
+.pulso-shared {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -49,4 +50,41 @@
 }
 .leaflet-control-attribution {
   font-size: 10px;
+}
+
+.pulso-spider-leg {
+  stroke: var(--pulso-ink);
+}
+
+/* Shared locations use outlined pins; zoom clusters use filled circles. */
+.pulso-shared {
+  position: relative;
+  border-radius: 50%;
+  color: var(--pulso-ink);
+  box-shadow:
+    3px 3px 0 var(--pulso-white),
+    5px 5px 0 var(--pulso-ink),
+    0 2px 8px #153d3933;
+}
+.pulso-shared-count {
+  position: absolute;
+  top: -9px;
+  right: -9px;
+  min-width: 22px;
+  height: 22px;
+  padding-inline: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--pulso-white);
+  border-radius: 999px;
+  background: var(--pulso-ink);
+  color: var(--pulso-white);
+  font:
+    600 12px Arial,
+    sans-serif;
+}
+.pulso-marker:focus-visible .pulso-shared {
+  outline: 3px solid var(--pulso-ink);
+  outline-offset: 4px;
 }
