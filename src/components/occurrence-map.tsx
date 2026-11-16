@@ -151,14 +151,22 @@ export default function OccurrenceMap({
         const element = document.createElement('span');
         element.className =
           bucket.length > 1
-            ? `pulso-cluster${bucket.some((r) => r.id === selected?.id) ? ' pulso-selected' : ''}`
+            ? `${shared ? 'pulso-shared' : 'pulso-cluster'}${bucket.some((r) => r.id === selected?.id) ? ' pulso-selected' : ''}`
             : `pulso-pin pulso-${category(row)}${row.id === selected?.id ? ' pulso-selected' : ''}`;
-        if (bucket.length > 1) element.textContent = String(bucket.length);
+        if (bucket.length > 1 && !shared)
+          element.textContent = String(bucket.length);
         else {
+          if (shared) {
+            const count = document.createElement('span');
+            count.className = 'pulso-shared-count';
+            count.textContent = String(bucket.length);
+            element.appendChild(count);
+          }
           const svg = document.createElementNS(
             'http://www.w3.org/2000/svg',
             'svg',
           );
+          svg.setAttribute('aria-hidden', 'true');
           svg.setAttribute('viewBox', '0 0 24 24');
           svg.setAttribute('width', '18');
           svg.setAttribute('height', '18');
@@ -171,7 +179,14 @@ export default function OccurrenceMap({
             'http://www.w3.org/2000/svg',
             'path',
           );
-          path.setAttribute('d', paths[category(row)]);
+          path.setAttribute(
+            'd',
+            shared
+              ? opened
+                ? 'M8 3v5H3m18 0h-5V3M3 16h5v5m8 0v-5h5'
+                : 'M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5'
+              : paths[category(row)],
+          );
           svg.appendChild(path);
           element.appendChild(svg);
         }
@@ -188,7 +203,7 @@ export default function OccurrenceMap({
             iconSize: [40, 40],
             iconAnchor: [20, 20],
           }),
-          title: label,
+          title: shared ? `${opened ? 'Recolher' : 'Ver'} ${label}` : label,
           keyboard: true,
           bubblingMouseEvents: false,
           zIndexOffset: row.id === selected?.id ? 500 : 0,

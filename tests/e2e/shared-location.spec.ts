@@ -25,6 +25,9 @@ test('shared coordinates stay discoverable at maximum zoom and each record is se
     exact: true,
   });
   await expect(badge).toBeVisible();
+  await expect(badge.locator('.pulso-shared-count')).toHaveText('2');
+  await expect(badge.locator('.pulso-cluster')).toHaveCount(0);
+  await expect(badge).toHaveAttribute('title', 'Ver 2 ocorrências neste local');
   await badge.focus();
   await page.keyboard.press('Enter');
   const chooser = page.getByRole('region', {
