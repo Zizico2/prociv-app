@@ -30,10 +30,14 @@ export default function OccurrenceMap({
   rows,
   selected,
   onSelect,
+  onWarning,
+  compact,
 }: {
   rows: Occurrence[];
   selected: Occurrence | null;
   onSelect: (id: string) => void;
+  onWarning: (message: string) => void;
+  compact: boolean;
 }) {
   const container = useRef<HTMLElement>(null);
   const map = useRef<L.Map | null>(null);
@@ -177,6 +181,15 @@ export default function OccurrenceMap({
       );
   }, [selected]);
 
+  useEffect(() => {
+    onWarning(
+      locationError ||
+        (tilesFailed
+          ? 'O fundo do mapa está indisponível. As ocorrências continuam acessíveis na lista.'
+          : ''),
+    );
+  }, [locationError, tilesFailed, onWarning]);
+
   function fit() {
     const points = rows
       .filter(hasPoint)
@@ -226,6 +239,7 @@ export default function OccurrenceMap({
           isIconOnly
           icon={<Icon icon={Maximize} />}
           onClick={fit}
+          xstyle={styles.controlButton}
         />
         <Button
           label="A minha localização"
@@ -233,10 +247,11 @@ export default function OccurrenceMap({
           isIconOnly
           icon={<Icon icon={LocateFixed} />}
           onClick={locate}
+          xstyle={styles.controlButton}
           isLoading={locating}
         />
       </Stack>
-      {(tilesFailed || locationError) && (
+      {!compact && (tilesFailed || locationError) && (
         <Stack role="status" xstyle={styles.notice}>
           <Text type="supporting">
             {locationError ||
@@ -255,7 +270,43 @@ const styles = stylex.create({
     minHeight: 0,
     zIndex: 0,
   },
-  controls: { position: 'absolute', top: '4rem', right: '1rem', zIndex: 500 },
+  controls: {
+    position: 'absolute',
+    top: {
+      default: '4rem',
+      '@media (max-width: 767px), (max-width: 1023px) and (max-height: 500px)':
+        '1rem',
+    },
+    right: '1rem',
+    zIndex: 500,
+  },
+  controlButton: {
+    backgroundColor: {
+      default: null,
+      '@media (max-width: 767px), (max-width: 1023px) and (max-height: 500px)':
+        'var(--color-background-surface)',
+    },
+    minHeight: {
+      default: null,
+      '@media (max-width: 767px), (max-width: 1023px) and (max-height: 500px)':
+        '44px',
+    },
+    minWidth: {
+      default: null,
+      '@media (max-width: 767px), (max-width: 1023px) and (max-height: 500px)':
+        '44px',
+    },
+    borderRadius: {
+      default: null,
+      '@media (max-width: 767px), (max-width: 1023px) and (max-height: 500px)':
+        '50%',
+    },
+    boxShadow: {
+      default: null,
+      '@media (max-width: 767px), (max-width: 1023px) and (max-height: 500px)':
+        'var(--pulso-shadow)',
+    },
+  },
   notice: {
     position: 'absolute',
     bottom: '2rem',

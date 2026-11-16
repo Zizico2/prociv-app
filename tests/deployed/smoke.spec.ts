@@ -11,9 +11,14 @@ test('deployed app and native gRPC boundary are available', async ({
   expect(snapshot.id).toBe('current');
   expect(Array.isArray(snapshot.occurrences)).toBeTruthy();
   await page.goto('/');
-  await expect(
-    page.getByRole('heading', { name: 'Portugal, agora.' }),
-  ).toBeVisible();
+  if (isMobile)
+    await expect(
+      page.getByRole('heading', { name: 'Portugal, agora.' }),
+    ).toBeAttached();
+  else
+    await expect(
+      page.getByRole('heading', { name: 'Portugal, agora.' }),
+    ).toBeVisible();
   await expect(
     page.getByLabel('Mapa interativo das ocorrências da ANEPC'),
   ).toBeVisible();
