@@ -332,6 +332,7 @@ export function Dashboard({
                   variant={kind === key ? 'primary' : 'ghost'}
                   aria-pressed={kind === key}
                   onClick={() => setKind(key)}
+                  xstyle={styles.categoryButton}
                   icon={
                     key !== 'all' ? (
                       <Icon icon={icons[key]} size="sm" />
@@ -346,6 +347,7 @@ export function Dashboard({
                 size="sm"
                 variant="ghost"
                 onClick={reset}
+                xstyle={styles.categoryButton}
               />
             )}
           </Stack>
@@ -780,20 +782,17 @@ const styles = stylex.create({
     // icon labels and the item becomes taller than the button.
     display: 'flex',
   },
+  categoryButton: {
+    // The hit target is outside the border box, so it does not count toward
+    // the row's height. Margin follows the inset the button measured, and the
+    // flex row grows to match.
+    marginTop: 'var(--astryx-hit-inset-top, 0px)',
+    marginBottom: 'var(--astryx-hit-inset-bottom, 0px)',
+  },
   categories: {
     overflowX: 'auto',
     flexShrink: 0,
-    // These sm buttons are 28px, and a coarse pointer grows each hit target to
-    // 44px past the border box. overflow-x: auto would scroll that extra.
-    // The row is at least one target tall, with the buttons centered in it.
-    minHeight: {
-      default: 'auto',
-      '@media (pointer: coarse)': '44px',
-    },
-    paddingBottom: {
-      default: '0.1rem',
-      '@media (pointer: coarse)': 0,
-    },
+    paddingBottom: '0.1rem',
     scrollbarWidth: 'none',
   },
   workspace: {
