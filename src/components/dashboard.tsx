@@ -25,7 +25,6 @@ import {
 } from '@tanstack/react-db';
 import {
   Activity,
-  ArrowUpRight,
   Car,
   ChevronRight,
   Flame,
@@ -230,11 +229,12 @@ export function Dashboard({
               <Link
                 as="a"
                 href="https://prociv.gov.pt/"
-                target="_blank"
+                isExternalLink
+                newTabLabel="Abre num novo separador"
                 size="sm"
                 xstyle={styles.sourceTag}
               >
-                Fonte ANEPC <ArrowUpRight size={13} aria-hidden />
+                Fonte ANEPC
               </Link>
             </Stack>
           }
@@ -732,7 +732,8 @@ function Detail({
 
 const styles = stylex.create({
   root: {
-    height: 'calc(100dvh - 3rem)',
+    // AppShell owns the dynamic viewport and the header's intrinsic height.
+    height: '100%',
     minHeight: 0,
     overflow: 'hidden',
     gap: 0,
@@ -750,6 +751,8 @@ const styles = stylex.create({
   },
   eyebrow: { letterSpacing: '0.16em', fontSize: '0.65rem', fontWeight: 700 },
   sourceTag: {
+    whiteSpace: 'nowrap',
+    flexShrink: 0,
     backgroundColor: 'var(--pulso-mint)',
     padding: '0.45rem 0.75rem',
     borderRadius: '2rem',
