@@ -325,7 +325,7 @@ export function Dashboard({
             xstyle={styles.categories}
           >
             {(Object.keys(categoryLabels) as Category[]).map((key) => (
-              <StackItem key={key} size="static">
+              <StackItem key={key} size="static" xstyle={styles.categoryItem}>
                 <Button
                   label={categoryLabels[key]}
                   size="sm"
@@ -775,13 +775,25 @@ const styles = stylex.create({
     borderBlock: '1px solid var(--color-border)',
     flexShrink: 0,
   },
+  categoryItem: {
+    // The button is inline-flex, so a block wrapper keeps a baseline gap under
+    // icon labels and the item becomes taller than the button.
+    display: 'flex',
+  },
   categories: {
     overflowX: 'auto',
-    // A coarse pointer grows each button past its box. overflow-x: auto would
-    // otherwise compute overflow-y to auto, and that sliver scrolls the row.
-    overflowY: 'clip',
     flexShrink: 0,
-    paddingBottom: '0.1rem',
+    // These sm buttons are 28px, and a coarse pointer grows each hit target to
+    // 44px past the border box. overflow-x: auto would scroll that extra.
+    // The row is at least one target tall, with the buttons centered in it.
+    minHeight: {
+      default: 'auto',
+      '@media (pointer: coarse)': '44px',
+    },
+    paddingBottom: {
+      default: '0.1rem',
+      '@media (pointer: coarse)': 0,
+    },
     scrollbarWidth: 'none',
   },
   workspace: {

@@ -46,16 +46,43 @@ test('current snapshot, search, category filters, missing points and details', a
       let row = button?.parentElement ?? null;
       while (row && getComputedStyle(row).overflowX !== 'auto')
         row = row.parentElement;
-      if (!row) return { vertical: -1, horizontal: 0 };
+      if (!button || !row) return null;
+      const inset = (edge: 'top' | 'bottom') =>
+        Number.parseFloat(
+          getComputedStyle(button).getPropertyValue(
+            `--astryx-hit-inset-${edge}`,
+          ),
+        ) || 0;
+      const buttonBox = button.getBoundingClientRect();
+      const rowBox = row.getBoundingClientRect();
+      const label = [...button.querySelectorAll('span')].find(
+        (element) => element.textContent?.trim() === 'Todas',
+      );
+      const text = document.createRange();
+      if (label) text.selectNodeContents(label);
+      const textBox = label ? text.getBoundingClientRect() : buttonBox;
       row.scrollTop = 100;
       const vertical = row.scrollTop;
       row.scrollLeft = row.scrollWidth;
       const horizontal = row.scrollLeft;
       row.scrollLeft = 0;
-      return { vertical, horizontal };
+      return {
+        vertical,
+        horizontal,
+        overflow: row.scrollHeight - row.clientHeight,
+        targetFits:
+          buttonBox.top - inset('top') >= rowBox.top - 0.5 &&
+          buttonBox.bottom + inset('bottom') <= rowBox.bottom + 0.5,
+        labelFits:
+          textBox.top >= buttonBox.top - 0.5 &&
+          textBox.bottom <= buttonBox.bottom + 0.5,
+      };
     });
-    expect(scrolling.vertical).toBe(0);
-    expect(scrolling.horizontal).toBeGreaterThan(0);
+    expect(scrolling?.vertical).toBe(0);
+    expect(scrolling?.overflow).toBeLessThanOrEqual(0);
+    expect(scrolling?.targetFits).toBe(true);
+    expect(scrolling?.labelFits).toBe(true);
+    expect(scrolling?.horizontal).toBeGreaterThan(0);
   }
   if (isMobile)
     await page.getByRole('button', { name: 'Lista', exact: true }).click();
