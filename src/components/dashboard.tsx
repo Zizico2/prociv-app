@@ -325,13 +325,14 @@ export function Dashboard({
             xstyle={styles.categories}
           >
             {(Object.keys(categoryLabels) as Category[]).map((key) => (
-              <StackItem key={key} size="static">
+              <StackItem key={key} size="static" xstyle={styles.categoryItem}>
                 <Button
                   label={categoryLabels[key]}
                   size="sm"
                   variant={kind === key ? 'primary' : 'ghost'}
                   aria-pressed={kind === key}
                   onClick={() => setKind(key)}
+                  xstyle={styles.categoryButton}
                   icon={
                     key !== 'all' ? (
                       <Icon icon={icons[key]} size="sm" />
@@ -346,6 +347,7 @@ export function Dashboard({
                 size="sm"
                 variant="ghost"
                 onClick={reset}
+                xstyle={styles.categoryButton}
               />
             )}
           </Stack>
@@ -774,6 +776,18 @@ const styles = stylex.create({
     backgroundColor: 'var(--color-background-surface)',
     borderBlock: '1px solid var(--color-border)',
     flexShrink: 0,
+  },
+  categoryItem: {
+    // The button is inline-flex, so a block wrapper keeps a baseline gap under
+    // icon labels and the item becomes taller than the button.
+    display: 'flex',
+  },
+  categoryButton: {
+    // The hit target is outside the border box, so it does not count toward
+    // the row's height. Margin follows the inset the button measured, and the
+    // flex row grows to match.
+    marginTop: 'var(--astryx-hit-inset-top, 0px)',
+    marginBottom: 'var(--astryx-hit-inset-bottom, 0px)',
   },
   categories: {
     overflowX: 'auto',

@@ -24,6 +24,66 @@ test('current snapshot, search, category filters, missing points and details', a
   await expect(
     page.getByLabel('Mapa interativo das ocorrências da ANEPC'),
   ).toBeVisible();
+  if (isMobile) {
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const button = [...document.querySelectorAll('button')].find(
+            (element) => element.textContent?.trim() === 'Todas',
+          );
+          return button
+            ? getComputedStyle(button)
+                .getPropertyValue('--astryx-hit-inset-bottom')
+                .trim()
+            : '';
+        }),
+      )
+      .not.toBe('');
+    const scrolling = await page.evaluate(() => {
+      const button = [...document.querySelectorAll('button')].find(
+        (element) => element.textContent?.trim() === 'Todas',
+      );
+      let row = button?.parentElement ?? null;
+      while (row && getComputedStyle(row).overflowX !== 'auto')
+        row = row.parentElement;
+      if (!button || !row) return null;
+      const inset = (edge: 'top' | 'bottom') =>
+        Number.parseFloat(
+          getComputedStyle(button).getPropertyValue(
+            `--astryx-hit-inset-${edge}`,
+          ),
+        ) || 0;
+      const buttonBox = button.getBoundingClientRect();
+      const rowBox = row.getBoundingClientRect();
+      const label = [...button.querySelectorAll('span')].find(
+        (element) => element.textContent?.trim() === 'Todas',
+      );
+      const text = document.createRange();
+      if (label) text.selectNodeContents(label);
+      const textBox = label ? text.getBoundingClientRect() : buttonBox;
+      row.scrollTop = 100;
+      const vertical = row.scrollTop;
+      row.scrollLeft = row.scrollWidth;
+      const horizontal = row.scrollLeft;
+      row.scrollLeft = 0;
+      return {
+        vertical,
+        horizontal,
+        overflow: row.scrollHeight - row.clientHeight,
+        targetFits:
+          buttonBox.top - inset('top') >= rowBox.top - 0.5 &&
+          buttonBox.bottom + inset('bottom') <= rowBox.bottom + 0.5,
+        labelFits:
+          textBox.top >= buttonBox.top - 0.5 &&
+          textBox.bottom <= buttonBox.bottom + 0.5,
+      };
+    });
+    expect(scrolling?.vertical).toBe(0);
+    expect(scrolling?.overflow).toBeLessThanOrEqual(0);
+    expect(scrolling?.targetFits).toBe(true);
+    expect(scrolling?.labelFits).toBe(true);
+    expect(scrolling?.horizontal).toBeGreaterThan(0);
+  }
   if (isMobile)
     await page.getByRole('button', { name: 'Lista', exact: true }).click();
   const list = page.getByRole('complementary', {
