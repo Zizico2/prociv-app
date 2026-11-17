@@ -24,8 +24,50 @@ async function openSharedLocation(page: Page, count = 2) {
   );
   await page.goto('/');
   await page.getByRole('button', { name: 'Atualizar', exact: true }).click();
-  return { crash };
+  return { crash, snapshot };
 }
+
+test('selecting another occurrence closes the shared-location chooser', async ({
+  page,
+}) => {
+  const { snapshot } = await openSharedLocation(page);
+  const other = snapshot.occurrences.find(
+    (row: { id: string }) => row.id === 'missing-1',
+  );
+  Object.assign(other, { latitude: 41.15, longitude: -8.61 });
+  await page.getByRole('button', { name: 'Atualizar', exact: true }).click();
+  const map = page.getByLabel('Mapa interativo das ocorrências da ANEPC');
+  const badge = map.getByRole('button', {
+    name: '2 ocorrências neste local',
+    exact: true,
+  });
+  const chooser = page.getByRole('region', {
+    name: '2 ocorrências neste local',
+  });
+  const marker = map.getByRole('button', { name: 'Évora: Outra', exact: true });
+
+  for (const activation of ['click', 'Enter', 'Space']) {
+    await badge.click();
+    await expect(chooser).toBeVisible();
+    await expect(map.locator('.pulso-spider-leg')).toHaveCount(2);
+    if (activation === 'click') await marker.click();
+    else {
+      await marker.focus();
+      await page.keyboard.press(activation);
+    }
+    await expect(page.getByText(/N.º 20260003 · Fonte às/)).toBeVisible();
+    await expect(chooser).toHaveCount(0);
+    await expect(map.locator('.pulso-spider-leg')).toHaveCount(0);
+    await expect(badge).toHaveAttribute('aria-expanded', 'false');
+    await page.getByRole('button', { name: 'Fechar detalhes' }).click();
+    await expect(chooser).toHaveCount(0);
+  }
+  await badge.click();
+  await expect(chooser).toBeVisible();
+  await map.click({ position: { x: 5, y: 5 } });
+  await expect(chooser).toHaveCount(0);
+  await expect(map.locator('.pulso-spider-leg')).toHaveCount(0);
+});
 
 for (const count of [2, 12]) {
   test(`compact shared-location chooser with ${count} records stays clear of map controls and attribution`, async ({
@@ -126,7 +168,11 @@ test('shared coordinates stay discoverable at maximum zoom and each record is se
   await expect(chooser).toBeVisible();
   await map.getByRole('button', { name: /Santarém/ }).click();
   await expect(page.getByText(/N.º 20260001 · Fonte às/)).toBeVisible();
+  await expect(chooser).toHaveCount(0);
+  await expect(map.locator('.pulso-spider-leg')).toHaveCount(0);
   await page.getByRole('button', { name: 'Fechar detalhes' }).click();
+  await badge.click();
+  await expect(chooser).toBeVisible();
   await chooser
     .getByRole('button', { name: 'Fechar ocorrências neste local' })
     .click();
