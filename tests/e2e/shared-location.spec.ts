@@ -1,8 +1,6 @@
-import { expect, test } from '@playwright/test';
+import { expect, type Page, test } from '@playwright/test';
 
-test('shared coordinates stay discoverable at maximum zoom and each record is selectable', async ({
-  page,
-}) => {
+async function openSharedLocation(page: Page, count = 2) {
   await page.route('https://tile.openstreetmap.org/**', (route) =>
     route.abort(),
   );
@@ -14,11 +12,90 @@ test('shared coordinates stay discoverable at maximum zoom and each record is se
     (row: { id: string }) => row.id === 'accident-1',
   );
   Object.assign(crash, { latitude: fire.latitude, longitude: fire.longitude });
+  for (let index = 2; index < count; index++) {
+    snapshot.occurrences.push({
+      ...crash,
+      id: `shared-${index}`,
+      number: 20260100 + index,
+    });
+  }
   await page.route('**/api/occurrences', (route) =>
     route.fulfill({ json: snapshot }),
   );
   await page.goto('/');
   await page.getByRole('button', { name: 'Atualizar', exact: true }).click();
+  return { crash };
+}
+
+for (const count of [2, 12]) {
+  test(`compact shared-location chooser with ${count} records stays clear of map controls and attribution`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 412, height: 839 });
+    await openSharedLocation(page, count);
+    const map = page.getByLabel('Mapa interativo das ocorrências da ANEPC');
+    await map
+      .getByRole('button', {
+        name: `${count} ocorrências neste local`,
+        exact: true,
+      })
+      .click();
+    const chooser = page.getByRole('region', {
+      name: `${count} ocorrências neste local`,
+    });
+    const controls = page
+      .getByRole('button', {
+        name: /^(Lista|Atualizar|Avisos sobre os dados|Pesquisar e filtrar|Enquadrar ocorrências|A minha localização|Zoom in|Zoom out)$/,
+      })
+      .or(map.locator('.leaflet-control-attribution'));
+
+    for (const viewport of [
+      { width: 412, height: 839 },
+      { width: 390, height: 650 },
+      { width: 320, height: 568 },
+      { width: 844, height: 390 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await expect(chooser).toBeVisible();
+      for (const control of await controls.all()) {
+        if (!(await control.isVisible())) continue;
+        await expect
+          .poll(
+            async () => {
+              const panel = (await chooser.boundingBox())!;
+              const target = (await control.boundingBox())!;
+              return (
+                panel.x < target.x + target.width &&
+                panel.x + panel.width > target.x &&
+                panel.y < target.y + target.height &&
+                panel.y + panel.height > target.y
+              );
+            },
+            {
+              message: `Chooser overlaps ${await control.textContent()} at ${viewport.width}×${viewport.height}`,
+            },
+          )
+          .toBe(false);
+      }
+      const last = chooser.getByRole('button', { name: /Despiste/ }).last();
+      await last.scrollIntoViewIfNeeded();
+      // A visible row must also receive pointer input, including after scrolling.
+      await last.click({ trial: true });
+    }
+    await chooser
+      .getByRole('button', { name: /Despiste/ })
+      .last()
+      .click();
+    await expect(
+      page.getByRole('button', { name: 'Fechar detalhes' }),
+    ).toBeVisible();
+  });
+}
+
+test('shared coordinates stay discoverable at maximum zoom and each record is selectable', async ({
+  page,
+}) => {
+  const { crash } = await openSharedLocation(page);
   const map = page.getByLabel('Mapa interativo das ocorrências da ANEPC');
   const badge = map.getByRole('button', {
     name: '2 ocorrências neste local',
@@ -55,6 +132,8 @@ test('shared coordinates stay discoverable at maximum zoom and each record is se
     .click();
   await expect(chooser).toHaveCount(0);
   await expect(map.locator('.pulso-spider-leg')).toHaveCount(0);
+  // Selection preserves the map view; explicitly center the maximum-zoom check.
+  await page.getByRole('button', { name: 'Enquadrar ocorrências' }).click();
   for (let i = 0; i < 20; i++) {
     const zoom = map.getByRole('button', { name: 'Zoom in' });
     if ((await zoom.getAttribute('aria-disabled')) === 'true') break;
