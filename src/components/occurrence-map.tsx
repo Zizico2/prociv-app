@@ -228,16 +228,21 @@ export default function OccurrenceMap({
         }
         marker.on('click', () => {
           if (shared) setExpanded(opened ? null : pointKey(row));
-          else if (bucket.length > 1)
-            instance.setView(
-              position,
-              Math.min(instance.getMaxZoom(), instance.getZoom() + 2),
-              {
-                animate: !window.matchMedia('(prefers-reduced-motion: reduce)')
-                  .matches,
-              },
-            );
-          else select(row.id);
+          else {
+            // Marker events do not bubble to the map's dismissal handler.
+            setExpanded(null);
+            if (bucket.length > 1)
+              instance.setView(
+                position,
+                Math.min(instance.getMaxZoom(), instance.getZoom() + 2),
+                {
+                  animate: !window.matchMedia(
+                    '(prefers-reduced-motion: reduce)',
+                  ).matches,
+                },
+              );
+            else select(row.id);
+          }
         });
       }
       for (const bucket of buckets.values()) {
