@@ -413,9 +413,18 @@ const styles = stylex.create({
   chooser: {
     position: 'absolute',
     left: '1rem',
-    bottom: '1rem',
+    // Reserve the attribution strip and, in compact layouts, the action row.
+    bottom: {
+      default: '2rem',
+      '@media (max-width: 767px), (max-width: 1023px) and (max-height: 500px)':
+        '6rem',
+    },
     width: 'min(22rem, calc(100% - 5rem))',
-    maxHeight: '40%',
+    maxHeight: {
+      default: '40%',
+      '@media (max-width: 767px), (max-width: 1023px) and (max-height: 500px)':
+        'min(40%, calc(100% - 11rem))',
+    },
     overflowY: 'auto',
     padding: '0.75rem',
     backgroundColor: 'var(--color-background-surface)',
